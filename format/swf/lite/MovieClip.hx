@@ -279,12 +279,20 @@ class MovieClip extends flash.display.MovieClip {
 	}
 	
 	
-	@:noCompletion private function __createShape (symbol:ShapeSymbol):Shape {
+	@:noCompletion private function __createShape (symbol:ShapeSymbol):DisplayObject {
 		
 		var shape = new Shape ();
 		var graphics = shape.graphics;
 
 		if (symbol.rendered != null) {
+			
+			var commands = @:privateAccess symbol.rendered.graphics.__commands;
+			if(commands.bitmapDraws.length > 0){
+				var bmp = symbol.rendered.graphics.__commands.bitmapDraws[0];
+				return new Bitmap (bmp.bd, PixelSnapping.AUTO, true);
+			}
+			
+			
 			graphics.copyFrom(symbol.rendered.graphics);
 			return shape;
 		}
@@ -401,6 +409,15 @@ class MovieClip extends flash.display.MovieClip {
 		symbol.commands = null;
 		symbol.rendered = new Shape();
 		symbol.rendered.graphics.copyFrom(shape.graphics);
+		
+		var commands = @:privateAccess graphics.__commands;
+		if(commands.bitmapDraws.length > 0){
+			var bmp = graphics.__commands.bitmapDraws[0];
+			return new Bitmap (bmp.bd, PixelSnapping.AUTO, true);
+		} else {
+			trace('skipped');
+		}
+		
 		
 		return shape;
 		
