@@ -15,6 +15,9 @@ import openfl.Assets;
 
 #if (lime && !lime_legacy)
 import lime.graphics.Image;
+import lime.graphics.ImageChannel;
+import lime.math.Vector2;
+import lime.Assets in LimeAssets;
 import lime.app.Future;
 import lime.app.Promise;
 #end
@@ -96,21 +99,19 @@ import lime.app.Promise;
 		var promise = new Promise<lime.Assets.AssetLibrary> ();
 		
 		#if swflite_preload
-		var paths = [];
-		var bitmap:BitmapSymbol;
+		var bitmapSymbols:Array<BitmapSymbol> = [];
 		
 		for (symbol in swf.symbols) {
 			
 			if (Std.is (symbol, BitmapSymbol)) {
 				
-				bitmap = cast symbol;
-				paths.push (bitmap.path);
+				bitmapSymbols.push (cast symbol);
 				
 			}
 			
 		}
 		
-		if (paths.length == 0) {
+		if (bitmapSymbols.length == 0) {
 			
 			promise.complete (this);
 			
@@ -118,13 +119,13 @@ import lime.app.Promise;
 			
 			var loaded = 0;
 			
-			var onLoad = function (_) {
+			var onLoad = function () {
 				
 				loaded++;
 				
-				promise.progress (loaded / paths.length);
+				promise.progress (loaded / bitmapSymbols.length);
 				
-				if (loaded == paths.length) {
+				if (loaded == bitmapSymbols.length) {
 					
 					promise.complete (this);
 					
@@ -132,10 +133,36 @@ import lime.app.Promise;
 				
 			};
 			
-			for (path in paths) {
+			for (symbol in bitmapSymbols) {
 				
-				Assets.loadBitmapData (path).onComplete (onLoad).onError (promise.error);
-				
+				if (Assets.cache.hasBitmapData(symbol.path)) {
+                    			onLoad();
+        			} else {
+                    			LimeAssets.loadImage(symbol.path, false).onComplete(function(image) {
+                        			if (image != null) {
+                            				if (symbol.alpha != null && symbol.alpha != "") {
+                                				LimeAssets.loadImage(symbol.alpha, false).onComplete(function(alpha) {
+                                    					if (alpha != null) {
+                                        					image.copyChannel(alpha, alpha.rect, new Vector2(),
+                                                					ImageChannel.RED, ImageChannel.ALPHA);
+                                        					image.buffer.premultiplied = true;
+                                        					var bitmapData = BitmapData.fromImage(image);
+                                        					Assets.cache.setBitmapData(symbol.path, bitmapData);
+                                        					onLoad();
+                                    					} else {
+                                        					promise.error('Failed to load image alpha : ${symbol.alpha}');
+                                    					}
+                                				}).onError(promise.error);								
+                            				} else {
+                                				var bitmapData = BitmapData.fromImage(image);
+                                				Assets.cache.setBitmapData(symbol.path, bitmapData);
+                                				onLoad();
+                            				}
+                        			} else {
+                           				 promise.error('Failed to load image : ${symbol.path}');
+                        			}
+                    			}).onError(promise.error);
+                		}				
 			}
 			
 		}
