@@ -402,7 +402,7 @@ class SWFLiteExporter {
 	}
 	
 	
-	private function addShape (tag:TagDefineShape):ShapeSymbol {
+	private function addShape (tag:TagDefineShape):SWFSymbol {
 		
 		var symbol = new ShapeSymbol ();
 		symbol.id = tag.characterId;
@@ -424,6 +424,30 @@ class SWFLiteExporter {
 				
 			}
 			
+		}
+		
+		var bitmaps = ShapeBitmapExporter.process(handler);
+		if(bitmaps != null){
+			
+			var spriteSymbol = new SpriteSymbol ();
+			var frame = new Frame();
+			for(i in 0...bitmaps.length){
+				var bitmap = bitmaps[i];
+				var transform = bitmap.transform;
+				// transform.tx *= (1 / 20);
+				// transform.ty *= (1 / 20);
+				var frameObject = new FrameObject ();
+				frameObject.symbol = bitmap.id;
+				frameObject.id = i;	
+				frameObject.depth = i;
+				frameObject.matrix = transform;
+				frame.objects.push (frameObject);
+			}
+			
+			spriteSymbol.frames.push (frame);
+			spriteSymbol.id = tag.characterId;
+			swfLite.symbols.set (spriteSymbol.id, spriteSymbol);
+			return spriteSymbol;
 		}
 		
 		swfLite.symbols.set (symbol.id, symbol);
