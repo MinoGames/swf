@@ -426,34 +426,40 @@ class SWFLiteExporter {
 			
 		}
 		
+		//check if we can replace this shape with a series of bitmaps (see ShapeBitmapExporter for reasoning)
 		var bitmaps = ShapeBitmapExporter.process(handler);
-		if(bitmaps != null){
+		
+		if(bitmaps != null) {
 			
+			//if we can, construct a sprite and add all the bitmaps to this sprite as children
+			//this will preserve the correct .numChildren and .addChildAt behavior the shape has
 			var spriteSymbol = new SpriteSymbol ();
 			var frame = new Frame();
-			for(i in 0...bitmaps.length){
+			
+			for(i in 0...bitmaps.length) {
+				
+				//construct the bitmap and add it to the sprite
 				var bitmap = bitmaps[i];
-				var transform = bitmap.transform;
-				// transform.tx *= (1 / 20);
-				// transform.ty *= (1 / 20);
 				var frameObject = new FrameObject ();
 				frameObject.symbol = bitmap.id;
 				frameObject.id = i;	
 				frameObject.depth = i;
-				frameObject.matrix = transform;
+				frameObject.matrix = bitmap.transform;
 				frame.objects.push (frameObject);
+				
 			}
 			
+			//finish constructing the sprite and save it
 			spriteSymbol.frames.push (frame);
 			spriteSymbol.id = tag.characterId;
 			swfLite.symbols.set (spriteSymbol.id, spriteSymbol);
 			return spriteSymbol;
+			
+		} else {
+			
+			swfLite.symbols.set (symbol.id, symbol);
+			return symbol;
 		}
-		
-		swfLite.symbols.set (symbol.id, symbol);
-		
-		return symbol;
-		
 	}
 	
 	
