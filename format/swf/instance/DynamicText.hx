@@ -239,6 +239,8 @@ class SWFFont extends AbstractFont {
 	
 	public override function renderGlyph (charCode:Int):BitmapData {
 		
+        return super.renderGlyph(charCode);
+        
 		if (!bitmapData.exists (charCode)) {
 			
 			var index = -1;
